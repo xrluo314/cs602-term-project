@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+        crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Gugi|Lobster|News+Cycle|Ubuntu" rel="stylesheet">
+
+
+
+
+    <link type="text/css" rel="stylesheet" href="css/chat.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4"
+        crossorigin="anonymous"></script>
+    <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.bootcss.com/bootstrap-select/1.12.1/js/bootstrap-select.min.js"></script>-->
+    <title>Yelp Map</title>
+    <style>
+        body{
+            font-family: 'Ubuntu', sans-serif;
+            }
+            .bodytype{
+                background: linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,.9)), url("imagetest.jpg");
+
+            }
+            h1{
+                font-family: 'Lobster', cursive;
+                font-size: 65px;
+                text-align: center;
+            }
+            #map {
+              height: 600px;
+            }
+            #input_limit{
+                width: 100px;
+            }
+            .resultlist{              
+                border: 1px solid lightgray;
+                border-radius: 25px;
+                width:400px;
+                float: left;
+                margin:10px;
+                text-align: center;
+            }
+            .resultlist b{
+                font-weight:900;
+                color:sienna;
+            }
+            #resultimg{
+                border-radius:10px;
+            }
+            #yelpicon{
+                width: 12%;
+                height: 12%;
+            }
+            body form{
+                font-size: 20px;
+            }       
+          </style>
+</head>
+
+<body>
+    <div class="login-wrap" id="loginDiv">
+        <div class="login-con">
+            <h3>User Login</h3>
+            <input type="text" placeholder="Please enter your user name" style="width:300px" id="loginName">
+            <input type="text" placeholder="Please enter your password" style="width:300px" id="loginPwd">
+            <div id="loginText"></div>
+            <button style="width:100px" class="btn btn-primary" id="regiBtn">sign up</button>
+            <button style="width:100px" class="btn btn-primary" id="loginBtn">login</button>
+        </div>
+    </div>
+    <div class="bodytype" id="theBody" style="display:none;">
+        <h1>Welcome to <img id="yelpicon" src="yelpicon.png"> Map!</h1>
+
+
+        <form class="form-inline">
+            <div class="form-group">
+                <label for="searchContent">&ensp;&ensp;&ensp;Keyword:&ensp;</label>
+                <input type="text" name="searchContent" id="searchContent" value="" class="form-control" placeholder="Thai, Italian, Chinese..">
+            </div>
+            <div class="form-group">
+                <label for="searchLocation">&ensp;&ensp;&ensp;Location:&ensp;</label>
+                <input type="text" class="form-control" name="searchLocation" id="searchLocation" value="" placeholder="NY, Boston..">
+            </div>
+            <div class="form-group">
+                <label for="input_limit">&ensp;&ensp;&ensp;Number of results:&ensp;</label>
+                <input type="text" class="form-control" id="input_limit" placeholder="Max: 50">&ensp;&ensp;&ensp;
+            </div><br />
+
+            <label>Sort by:&ensp;&nbsp;<input type="radio" name="sortBy" id="sortby1" value="best_match" style="white-space:nowrap">&nbsp;Best
+                Match&ensp;&nbsp;</label>
+            <label><input type="radio" name="sortBy" id="sortby2" value="rating"> &nbsp;Rating&ensp;&nbsp;</label>
+            <label><input type="radio" name="sortBy" id="sortby3" value="review_count" style="white-space:nowrap">&nbsp;Review
+                Count&ensp;&nbsp;</label>
+            <label><input type="radio" name="sortBy" id="sortby4" value="distance"> &nbsp;Distance</label>
+            <button type="button" class="btn btn-primary" id="btn">Search</button>
+        </form><br><br>
+    </div>
+    <div id="map" style="display:none;"></div><br>
+
+    <div class="container" style="padding-left: 140px;padding-right: 100px">
+        <div class="row">
+            <div class="col-lg-12">
+                <div id="results">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js" integrity="sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
+        crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        function isInteger(obj) {
+            return typeof obj === 'number' && obj % 1 === 0;
+        }
+        $("#regiBtn").click(function () {
+            $("#loginText").html("");
+            var username = $("#loginName").val();
+            var pwd = $("#loginPwd").val();
+            $.ajax({
+                url: 'http://127.0.0.1:3000/isexist',
+                type: 'put',
+                data: {
+                    username: username,
+                    password: pwd
+                },
+                success: function (rs) {
+                    console.log(rs);
+                    if (rs.length == 0) {
+                        $.ajax({
+                            url: 'http://127.0.0.1:3000/register',
+                            type: 'put',
+                            data: {
+                                username: username,
+                                password: pwd
+                            },
+                            success: function (result) {
+                                console.log(result);
+                            }
+                        });
+                    } else {
+                        $("#loginText").html("The user name already exist.");
+                    }
+                }
+            });
+        });
+        function wish(id) {
+
+            var theid = "#";
+            theid += id;
+            var shopId = $(theid).parent().attr("id");
+            $.ajax({
+                url: 'http://127.0.0.1:3000/iswish',
+                type: 'get',
+
+                success: function (rs) {
+                    console.log(rs);
+                    var count = 0;
+                    for (var i = 0; i < rs.length; i++) {
+                        if (rs[i].business == shopId) {
+                            count = 1;
+                        }
+                    }
+                    if (count == 0) {
+                        $.ajax({
+                            url: 'http://127.0.0.1:3000/addtowish',
+                            type: 'put',
+                            data: {
+                                shopid: shopId
+                            },
+                            success: function (result) {
+                                if (result.result.ok == 1) {
+                                    alert("This business has been successfully added to wish list.")
+                                }
+                            }
+                        });
+                    } else {
+                        alert("This business is already in your wish list!");
+                    }
+                }
+            });
+            console.log();
+        };
+
+        function been(id) {
+            var theid = "#";
+            theid += id;
+            var shopId = $(theid).parent().attr("id");
+            $.ajax({
+                url: 'http://127.0.0.1:3000/been',
+                type: 'put',
+                data: {
+                    shopid: shopId
+                },
+
+                success: function (rs) {
+                    console.log(rs);
+                    if(rs.result.ok==1){
+                        alert("This business has been successfully added to been there list.")
+                        seewish();
+                    }
+                }
+            });
+        };
+        function delItem(id) {
+            var theid = "#";
+            theid += id;
+            var shopId = $(theid).parent().attr("id");
+            $.ajax({
+                url: 'http://127.0.0.1:3000/delete',
+                type: 'put',
+                data: {
+                    shopid: shopId
+                },
+                success: function (rs) {
+                    console.log(rs);
+                }
+
+            });
+            beenThere();
+        };
+        $("#loginBtn").click(function () {
+            $("#loginText").html("");
+            var username = $("#loginName").val();
+            var pwd = $("#loginPwd").val();
+            $.ajax({
+                url: 'http://127.0.0.1:3000/isexist',
+                type: 'put',
+                data: {
+                    username: username,
+                    password: pwd
+                },
+                success: function (rs) {
+                    console.log(rs);
+                    if (rs.length == 0) {
+                        console.log("This user name does not exist.");
+                    } else {
+                        if (rs[0].password == pwd) {
+                            $("#theBody").show();
+                            $("#loginDiv").hide();
+                            $('#results').append('<h3><b>' + username + '</b>, Welcome! <b>'
+                                + '<button class="btn btn-primary" onclick="seewish()">watch your wish list</button></h3>');
+                        } else {
+                            $("#loginText").html("The password you've entered is incorrect.");
+                        }
+                    }
+
+                }
+            });
+        });
+
+        function beenThere() {
+            $('#results').empty();
+            $.ajax({
+                url: 'http://127.0.0.1:3000/beenthere',
+                type: 'get',
+
+                success: function (rs) {
+                    console.log(rs);
+                    if (rs.length == 0) {
+                        $('#results').append('<h3> You have not been to anywhere. </h3>');
+                    } else {
+                        $('#results').append('<h3> Your "been there" list. </h3>');
+                        var btnC = 0;
+                        for (i = 0; i < rs.length; i++) {
+                            var thisurl = "https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/";
+                            thisurl += rs[i].business;
+                            $.ajax({
+                                url: thisurl,
+                                headers: {
+                                    'Authorization': 'Bearer dJCO55qZ4YZPqPIofFwV4Dj5kuSvo7QqjhHOX1Hx_te9Zf5HF8UsKzt3qAeXiz09YyI1F41hXSjanZ7pB42f5MFSBSFDdjYW7RV2cdK8bJ1wiEibWnUi59Iz1FvCXHYx',
+                                },
+                                method: 'GET',
+                                dataType: 'json',
+                                success: function (data) {
+                                    var price = data.price;
+                                    if (!price) {
+                                        price = "Unknown";
+                                    }
+                                    console.log(data);
+                                    $('#results').append('<div class="resultlist" id="' + data.id + '" style="margin-top:50px;margin-bottom:50px;"><img id="resultimg"src="'
+                                        + data.image_url + '" style="width:200px;height:150px;" class="img-rounded"><br><b>' + data.name +
+                                        '</b> <br>(' + data.alias + ')<br>Category: <b>'
+                                        + data.categories[0].title + '</b><br>Price: <b>' + price + '</b><br> Location: ' + data.location.address1 + ' ' + data.location.city + ', '
+                                        + data.location.state + ' ' + data.location.zip_code + '<br>Phone number: '
+                                        + data.display_phone + '<br>Rating of <b>' + data.rating + '</b> with <b>' + data.review_count
+                                        + '</b> reviews.<br><button class="btn btn-primary" id="' + btnC + '" onclick="delItem(id)">delete</button></div>'
+                                    );
+                                    btnC += 1;
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        }
+
+        function seewish() {
+            $('#results').empty();
+            $.ajax({
+                url: 'http://127.0.0.1:3000/seewish',
+                type: 'get',
+
+                success: function (rs) {
+                    if (rs.length == 0) {
+                        $('#results').append('<h3> Your wish list is empty. </h3>');
+                    } else {
+                        $('#results').append('<h3> Here is your wish list. '
+                            + '<button class="btn btn-primary" onclick="beenThere()">see "been there" list</button></h3>');
+                        var btnC = 0;
+                        for (i = 0; i < rs.length; i++) {
+                            var thisurl = "https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/";
+                            thisurl += rs[i].business;
+                            $.ajax({
+                                url: thisurl,
+                                headers: {
+                                    'Authorization': 'Bearer dJCO55qZ4YZPqPIofFwV4Dj5kuSvo7QqjhHOX1Hx_te9Zf5HF8UsKzt3qAeXiz09YyI1F41hXSjanZ7pB42f5MFSBSFDdjYW7RV2cdK8bJ1wiEibWnUi59Iz1FvCXHYx',
+                                },
+                                method: 'GET',
+                                dataType: 'json',
+                                success: function (data) {
+                                    var price = data.price;
+                                    if (!price) {
+                                        price = "Unknown";
+                                    }
+                                    console.log(data);
+                                    $('#results').append('<div class="resultlist" id="' + data.id + '" style="margin-top:50px;margin-bottom:50px;"><img id="resultimg"src="'
+                                        + data.image_url + '" style="width:200px;height:150px;" class="img-rounded"><br><b>' + data.name +
+                                        '</b> <br>(' + data.alias + ')<br>Category: <b>'
+                                        + data.categories[0].title + '</b><br>Price: <b>' + price + '</b><br> Location: ' + data.location.address1 + ' ' + data.location.city + ', '
+                                        + data.location.state + ' ' + data.location.zip_code + '<br>Phone number: '
+                                        + data.display_phone + '<br>Rating of <b>' + data.rating + '</b> with <b>' + data.review_count
+                                        + '</b> reviews.<br><button class="btn btn-primary" id="' + btnC + '" onclick="been(id)">been there</button></div>'
+                                    );
+                                    btnC += 1;
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+        }
+        $('#btn').click(function () {
+            var limits = parseInt($('#input_limit').val());
+            if (isInteger(limits) && limits > 0 && limits < 51) {
+                searchFor();
+            } else {
+                alert("Please enter an integer which is between 1 and 50.");
+            }
+        });
+
+        function searchFor() {
+            $('#results').empty();
+            $("#map").show();
+            var searchString = $('#searchContent').val();
+            var searchLocation = $('#searchLocation').val();
+            if (searchString == '') {
+                alert('Please enter keyword');
+                return;
+            }
+            if (searchLocation == '') {
+                alert('Please enter location');
+                return;
+            }
+            var nameString = [];
+            var limits = parseInt($('#input_limit').val());
+            var myurl;
+            var sortby = $('input:radio[name="sortBy"]:checked').val();
+            if (!sortby) {
+                myurl = "https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search?term=" + searchString + "&location=" + searchLocation + "&limit=" + limits;
+            } else {
+                myurl = "https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search?term=" + searchString + "&location=" + searchLocation + "&sort_by=" + sortby + "&limit=" + limits;
+            }
+            var j = 0;
+            var infoString = [];
+            var loca=[]
+            $.ajax({
+                url: myurl,
+                headers: {
+                    'Authorization': 'Bearer dJCO55qZ4YZPqPIofFwV4Dj5kuSvo7QqjhHOX1Hx_te9Zf5HF8UsKzt3qAeXiz09YyI1F41hXSjanZ7pB42f5MFSBSFDdjYW7RV2cdK8bJ1wiEibWnUi59Iz1FvCXHYx',
+                },
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+
+                    // results from the API JSON return
+                    var totalresults = data.total;
+                    var btnIdCount = 0;
+
+                    if (totalresults > 0) {
+                        // Display a header
+                        $('#results').append('<h3>Here is the results list for <b>'
+                            + searchString + '</b> at <b>' + searchLocation + '</b>!<button class="btn btn-primary" onclick="seewish()">watch your wish list</button></h3>');
+                        // Itirate through the JSON array of 'businesses' which was returned by the API
+                        $.each(data.businesses, function (i, item) {
+                            var btnId = "#";
+                            btnId += btnIdCount;
+                            // Store each business' object in a variable
+                            var id = item.id;
+                            var category = item.categories[0].title;
+                            var alias = item.alias;
+                            var price = item.price;
+                            if (!price) {
+                                price = "Unknown";
+                            }
+                            var phone = item.display_phone;
+                            var dist = item.distance;
+                            var image = item.image_url;
+                            var name = item.name;
+                            var rating = item.rating;
+                            var reviewcount = item.review_count;
+                            var address = item.location.address1;
+                            var city = item.location.city;
+                            var state = item.location.state;
+                            var zipcode = item.location.zip_code;
+                            var latitude = item.coordinates.latitude;
+                            var longitude = item.coordinates.longitude;
+                            var thisLoc={lat:latitude,lng:longitude}
+                            loca.push(thisLoc);
+                            nameString.push(name);
+                            //Infowindow content
+                            var contentString = '<div id="content">' +
+                                '<div id="siteNotice">' +
+                                '</div>' +
+                                '<h3 id="firstHeading" class="firstHeading">' + name + '</h3>' +
+                                '<div id="bodyContent">' +
+                                '<p>Rating of <b>' + rating + '</b>' + ' with <b>' + reviewcount + '</b> reviews.</p>' +
+                                '</div>' + '</div>';
+                            infoString.push(contentString);
+                            j++;
+                            // Append results into page
+                            $('#results').append('<div class="resultlist" id="' + id + '" style="margin-top:50px;margin-bottom:50px;"><img id="resultimg"src="'
+                                + image + '" style="width:200px;height:150px;" class="img-rounded"><br><b>' + name +
+                                '</b> <br>(' + alias + ')<br>Category: <b>'
+                                + category + '</b><br>Price: <b>' + price + '</b><br> Location: ' + address + ' ' + city + ', ' + state + ' ' + zipcode
+                                + '<br>Phone number: '
+                                + phone + '<br>Rating of <b>' + rating + '</b> with <b>' + reviewcount
+                                + '</b> reviews.<br><button class="btn btn-primary" id="' + btnIdCount + '" onclick="wish(id)">add to wish</button></div>'
+                            );
+                            btnIdCount += 1;
+                        });
+                    } else {
+                        // If returned results are 0;then no businesses were returned by the JSON therefore display no results were found
+                        $('#results').append('<h5>We discovered no results!</h5>');
+
+                    }
+                    //Create a google map
+                    var map = new google.maps.Map(document.getElementById('map'), {
+                        zoom: 13,
+                        center: loca[1]
+                    });
+
+                    // Create an array of alphabetical characters used to label the markers
+                    var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+                    var markers = loca.map(function (location, i) {
+                        return new google.maps.Marker({
+                            position: location,
+                            label: labels[i % labels.length],
+                            title: nameString[i],
+                            map: map
+                        });
+                    });
+
+                    // Add a marker clusterer
+                    var markerCluster = new MarkerClusterer(map, markers,
+                        { imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m' });
+
+                    // Add infowindow to every marker
+                    function addInfoWindow(marker, info) {
+                        var infowindow = new google.maps.InfoWindow({
+                            content: info
+                        });
+                        google.maps.event.addListener(marker, 'click', function () {
+                            infowindow.open(map, marker);
+                        });
+                    }
+                    for (i = 0; i < markers.length; i++) {
+                        addInfoWindow(markers[i], infoString[i])
+                    }
+                }
+            });
+        }
+
+    </script>
+    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js">
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFC5yQFImvpCGoqyBfCRpn2kxGoa3yX90" async defer></script>
+</body>
+
+</html>
